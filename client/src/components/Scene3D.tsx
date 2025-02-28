@@ -1,9 +1,6 @@
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
-import { useEffect, useRef, useMemo, Suspense } from 'react';
-import { mapGestureToTransform } from '@/lib/gestureMapping';
-import { Mesh, Points, Float32BufferAttribute } from 'three';
-import { ErrorBoundary as ThreeErrorBoundary } from '../components/ui/error-boundary';
+import { useEffect, useRef } from 'react';
+import Sketch from 'react-p5';
+import p5Types from 'p5';
 
 interface Scene3DProps {
   mode: 'cube' | 'particles';
@@ -13,90 +10,70 @@ interface Scene3DProps {
   };
 }
 
-function Scene3DContent({ mode, handData }: Scene3DProps) {
-  const objectRef = useRef<Mesh>(null);
-  const particlesRef = useRef<Points>(null);
-
-  // Create particle positions once and reuse
-  const particlePositions = useMemo(() => {
-    const positions = new Float32Array(3000);
-    for (let i = 0; i < positions.length; i += 3) {
-      positions[i] = (Math.random() - 0.5) * 3;
-      positions[i + 1] = (Math.random() - 0.5) * 3;
-      positions[i + 2] = (Math.random() - 0.5) * 3;
-    }
-    return new Float32BufferAttribute(positions, 3);
-  }, []);
+export function Scene3D({ mode, handData }: Scene3DProps) {
+  const rotationRef = useRef({ x: 0, y: 0, z: 0 });
+  const scaleRef = useRef(1);
 
   useEffect(() => {
-    if (!handData.landmarks || !objectRef.current) return;
+    if (handData.landmarks && handData.landmarks.length > 0) {
+      // Update rotation based on hand position
+      const palm = handData.landmarks[0];
+      rotationRef.current = {
+        x: (palm[1] - 0.5) * Math.PI,
+        y: (palm[0] - 0.5) * Math.PI,
+        z: 0
+      };
 
-    const transform = mapGestureToTransform(handData);
-
-    if (mode === 'cube' && objectRef.current) {
-      objectRef.current.rotation.x = transform.rotation.x;
-      objectRef.current.rotation.y = transform.rotation.y;
-      objectRef.current.rotation.z = transform.rotation.z;
-      objectRef.current.position.x = transform.position.x;
-      objectRef.current.position.y = transform.position.y;
-      objectRef.current.position.z = transform.position.z;
-      objectRef.current.scale.setScalar(transform.scale);
-    } else if (mode === 'particles' && particlesRef.current) {
-      particlesRef.current.rotation.y += 0.01;
+      // Update scale based on pinch gesture
+      if (handData.gestures?.some(g => g.type === 'pinch')) {
+        const pinchGesture = handData.gestures.find(g => g.type === 'pinch');
+        if (pinchGesture) {
+          scaleRef.current = 0.5 + pinchGesture.confidence;
+        }
+      }
     }
-  }, [handData, mode]);
+  }, [handData]);
 
-  return (
-    <>
-      <ambientLight intensity={0.5} />
-      <pointLight position={[10, 10, 10]} />
+  const setup = (p5: p5Types, canvasParentRef: Element) => {
+    p5.createCanvas(400, 400, p5.WEBGL).parent(canvasParentRef);
+  };
 
-      {mode === 'cube' ? (
-        <mesh ref={objectRef}>
-          <boxGeometry args={[1, 1, 1]} />
-          <meshStandardMaterial color="purple" />
-        </mesh>
-      ) : (
-        <points ref={particlesRef}>
-          <bufferGeometry>
-            <primitive 
-              object={particlePositions} 
-              attach="attributes-position" 
-            />
-          </bufferGeometry>
-          <pointsMaterial 
-            size={0.02} 
-            color="white" 
-            transparent
-            opacity={0.8}
-            sizeAttenuation
-          />
-        </points>
-      )}
+  const draw = (p5: p5Types) => {
+    p5.background(0);
+    p5.lights();
 
-      <OrbitControls enableZoom={false} />
-    </>
-  );
-}
+    p5.rotateX(rotationRef.current.x);
+    p5.rotateY(rotationRef.current.y);
+    p5.rotateZ(rotationRef.current.z);
 
-export function Scene3D(props: Scene3DProps) {
+    const size = 100 * scaleRef.current;
+
+    if (mode === 'cube') {
+      p5.push();
+      p5.fill(200, 100, 200);
+      p5.box(size);
+      p5.pop();
+    } else {
+      // Particle system
+      p5.push();
+      for (let i = 0; i < 1000; i++) {
+        const angle = p5.random(p5.TWO_PI);
+        const radius = p5.random(size);
+        const x = p5.cos(angle) * radius;
+        const y = p5.sin(angle) * radius;
+        const z = p5.random(-size/2, size/2);
+
+        p5.stroke(255);
+        p5.strokeWeight(2);
+        p5.point(x, y, z);
+      }
+      p5.pop();
+    }
+  };
+
   return (
     <div className="w-full aspect-square rounded-lg overflow-hidden bg-black">
-      <ThreeErrorBoundary>
-        <Canvas 
-          camera={{ position: [0, 0, 5] }}
-          gl={{ 
-            antialias: true,
-            alpha: true,
-            powerPreference: "high-performance",
-            preserveDrawingBuffer: true
-          }}
-        >
-          <Suspense fallback={null}>
-            <Scene3DContent {...props} />
-          </Suspense>
-        </Canvas>
-      </ThreeErrorBoundary>
+      <Sketch setup={setup} draw={draw} />
     </div>
   );
 }

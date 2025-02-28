@@ -27,29 +27,22 @@ export function mapGestureToTransform(handData: any): Transform {
   const thumb = handData.landmarks[4];
   const index = handData.landmarks[8];
 
-  // Map hand position to object position
-  const position = {
-    x: (palm.x - 0.5) * 2,
-    y: -(palm.y - 0.5) * 2,
-    z: palm.z
-  };
-
-  // Calculate rotation based on palm orientation
+  // Map hand position to rotation
   const rotation = {
-    x: Math.atan2(palm.y, palm.z),
-    y: Math.atan2(palm.x, palm.z),
-    z: Math.atan2(thumb.y - palm.y, thumb.x - palm.x)
+    x: (palm[1] - 0.5) * Math.PI, // Based on hand vertical position
+    y: (palm[0] - 0.5) * Math.PI, // Based on hand horizontal position
+    z: Math.atan2(thumb[1] - palm[1], thumb[0] - palm[0]) // Based on thumb orientation
   };
 
   // Calculate scale based on pinch gesture
   const pinchDistance = Math.sqrt(
-    Math.pow(thumb.x - index.x, 2) +
-    Math.pow(thumb.y - index.y, 2)
+    Math.pow(thumb[0] - index[0], 2) +
+    Math.pow(thumb[1] - index[1], 2)
   );
   const scale = Math.max(0.5, Math.min(2, 1 + (1 - pinchDistance) * 2));
 
   return {
-    position,
+    position: { x: 0, y: 0, z: 0 }, // We're not using position in p5.js version
     rotation,
     scale
   };
