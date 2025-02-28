@@ -16,11 +16,14 @@ export function Scene3D({ mode, handData }: Scene3DProps) {
 
   useEffect(() => {
     if (handData.landmarks && handData.landmarks.length > 0) {
-      // Update rotation based on hand position
+      // Update rotation based on palm position (landmarks[0] is the palm base)
       const palm = handData.landmarks[0];
+
+      // Map hand position to rotation
+      // Subtract 0.5 to center around origin, multiply by 2π for full rotation
       rotationRef.current = {
-        x: (palm[1] - 0.5) * Math.PI,
-        y: (palm[0] - 0.5) * Math.PI,
+        x: (palm[1] - 0.5) * Math.PI * 2, // Vertical tilt
+        y: (palm[0] - 0.5) * Math.PI * 2, // Horizontal rotation
         z: 0
       };
 
@@ -28,7 +31,7 @@ export function Scene3D({ mode, handData }: Scene3DProps) {
       if (handData.gestures?.some(g => g.type === 'pinch')) {
         const pinchGesture = handData.gestures.find(g => g.type === 'pinch');
         if (pinchGesture) {
-          scaleRef.current = 0.5 + pinchGesture.confidence;
+          scaleRef.current = 0.5 + pinchGesture.confidence * 2; // Scale between 0.5 and 2.5
         }
       }
     }
@@ -42,6 +45,8 @@ export function Scene3D({ mode, handData }: Scene3DProps) {
     p5.background(0);
     p5.lights();
 
+    // Smooth rotation and scale transitions
+    p5.push();
     p5.rotateX(rotationRef.current.x);
     p5.rotateY(rotationRef.current.y);
     p5.rotateZ(rotationRef.current.z);
@@ -49,26 +54,38 @@ export function Scene3D({ mode, handData }: Scene3DProps) {
     const size = 100 * scaleRef.current;
 
     if (mode === 'cube') {
-      p5.push();
+      p5.noStroke();
       p5.fill(200, 100, 200);
       p5.box(size);
-      p5.pop();
+
+      // Add wireframe effect
+      p5.stroke(255);
+      p5.noFill();
+      p5.box(size * 1.001);
     } else {
       // Particle system
-      p5.push();
-      for (let i = 0; i < 1000; i++) {
+      p5.stroke(255);
+      p5.strokeWeight(2);
+
+      const particleCount = 1000;
+      for (let i = 0; i < particleCount; i++) {
         const angle = p5.random(p5.TWO_PI);
         const radius = p5.random(size);
+
+        // Create a spherical distribution of particles
         const x = p5.cos(angle) * radius;
         const y = p5.sin(angle) * radius;
         const z = p5.random(-size/2, size/2);
 
-        p5.stroke(255);
-        p5.strokeWeight(2);
-        p5.point(x, y, z);
+        // Add some motion to particles
+        const time = p5.millis() * 0.001;
+        const offsetX = p5.noise(x * 0.01, time) * 10;
+        const offsetY = p5.noise(y * 0.01, time) * 10;
+
+        p5.point(x + offsetX, y + offsetY, z);
       }
-      p5.pop();
     }
+    p5.pop();
   };
 
   return (
