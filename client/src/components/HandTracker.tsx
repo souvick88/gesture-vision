@@ -53,8 +53,8 @@ export function HandTracker({ isTracking, onHandData }: HandTrackerProps) {
             landmarks.forEach((point: number[]) => {
               ctx.beginPath();
               ctx.arc(
-                point[0] * canvas.width, 
-                point[1] * canvas.height, 
+                point[0], 
+                point[1], 
                 4, 0, 2 * Math.PI
               );
               ctx.fill();
@@ -64,21 +64,28 @@ export function HandTracker({ isTracking, onHandData }: HandTrackerProps) {
             ctx.beginPath();
             landmarks.forEach((point: number[], index: number) => {
               if (index === 0) {
-                ctx.moveTo(point[0] * canvas.width, point[1] * canvas.height);
+                ctx.moveTo(point[0], point[1]);
               } else {
-                ctx.lineTo(point[0] * canvas.width, point[1] * canvas.height);
+                ctx.lineTo(point[0], point[1]);
               }
             });
             ctx.stroke();
 
-            // Send normalized coordinates
+            // Normalize coordinates and send data
+            const normalizedLandmarks = landmarks.map((point: number[]) => [
+              point[0] / canvas.width,
+              point[1] / canvas.height,
+              point[2]
+            ]);
+
+            console.log('Hand detected:', {
+              palm: normalizedLandmarks[0],
+              pinch: calculatePinchDistance(normalizedLandmarks)
+            });
+
             onHandData({
-              landmarks: landmarks.map((point: number[]) => [
-                point[0], // Already normalized between 0-1
-                point[1], // Already normalized between 0-1
-                point[2]  // Z-coordinate
-              ]),
-              gestures: interpretGestures(landmarks)
+              landmarks: normalizedLandmarks,
+              gestures: interpretGestures(normalizedLandmarks)
             });
           } else {
             onHandData({});
@@ -108,27 +115,29 @@ export function HandTracker({ isTracking, onHandData }: HandTrackerProps) {
       className="absolute inset-0 pointer-events-none"
       style={{ 
         display: isTracking ? 'block' : 'none',
-        opacity: 0.7 
+        opacity: 0.7,
+        zIndex: 10
       }}
     />
   );
 }
 
-function interpretGestures(landmarks: number[][]) {
-  // Basic gesture detection based on finger positions
+function calculatePinchDistance(landmarks: number[][]) {
   const thumbTip = landmarks[4];
   const indexTip = landmarks[8];
-  const distance = Math.sqrt(
+  return Math.sqrt(
     Math.pow(thumbTip[0] - indexTip[0], 2) +
     Math.pow(thumbTip[1] - indexTip[1], 2)
   );
+}
 
+function interpretGestures(landmarks: number[][]) {
+  const distance = calculatePinchDistance(landmarks);
   const gestures = [];
 
-  if (distance < 0.1) { // Now using normalized coordinates (0-1)
-    gestures.push({ type: 'pinch', confidence: 1 - distance * 10 });
+  if (distance < 0.2) { // Adjusted threshold for normalized coordinates
+    gestures.push({ type: 'pinch', confidence: 1 - distance * 5 });
   }
 
-  // Add more gesture detection logic here
   return gestures;
 }
