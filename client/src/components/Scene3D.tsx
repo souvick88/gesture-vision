@@ -3,7 +3,7 @@ import { OrbitControls } from '@react-three/drei';
 import { useEffect, useRef, useMemo, Suspense } from 'react';
 import { mapGestureToTransform } from '@/lib/gestureMapping';
 import { Mesh, Points, Float32BufferAttribute } from 'three';
-import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { ErrorBoundary as ThreeErrorBoundary } from '../components/ui/error-boundary';
 
 interface Scene3DProps {
   mode: 'cube' | 'particles';
@@ -82,7 +82,7 @@ function Scene3DContent({ mode, handData }: Scene3DProps) {
 export function Scene3D(props: Scene3DProps) {
   return (
     <div className="w-full aspect-square rounded-lg overflow-hidden bg-black">
-      <ErrorBoundary>
+      <ThreeErrorBoundary>
         <Canvas 
           camera={{ position: [0, 0, 5] }}
           gl={{ 
@@ -96,7 +96,7 @@ export function Scene3D(props: Scene3DProps) {
             <Scene3DContent {...props} />
           </Suspense>
         </Canvas>
-      </ErrorBoundary>
+      </ThreeErrorBoundary>
     </div>
   );
 }

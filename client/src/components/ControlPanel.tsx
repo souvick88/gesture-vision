@@ -3,12 +3,14 @@ import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Box, Hand, Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ControlPanelProps {
   mode: 'cube' | 'particles';
   isTracking: boolean;
   onModeChange: (mode: 'cube' | 'particles') => void;
   onTrackingToggle: (enabled: boolean) => void;
+  cameraReady: boolean;
 }
 
 export function ControlPanel({
@@ -16,6 +18,7 @@ export function ControlPanel({
   isTracking,
   onModeChange,
   onTrackingToggle,
+  cameraReady,
 }: ControlPanelProps) {
   return (
     <Card className="p-6">
@@ -30,6 +33,7 @@ export function ControlPanel({
           <Switch
             checked={isTracking}
             onCheckedChange={onTrackingToggle}
+            disabled={!cameraReady}
           />
         </div>
 
@@ -52,6 +56,14 @@ export function ControlPanel({
             </Button>
           </div>
         </div>
+
+        {!cameraReady && (
+          <Alert>
+            <AlertDescription>
+              Enable camera access to start hand tracking
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="rounded-lg bg-muted p-4">
           <h4 className="font-medium mb-2">Gesture Guide</h4>
