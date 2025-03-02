@@ -43,16 +43,24 @@ export function ControlPanel({
             <Button
               variant={mode === 'cube' ? 'default' : 'outline'}
               onClick={() => onModeChange('cube')}
+              className="relative overflow-hidden transition-all hover:shadow-lg"
             >
               <Box className="mr-2 h-4 w-4" />
               Cube
+              {mode === 'cube' && (
+                <div className="absolute inset-0 bg-primary/10 animate-pulse" />
+              )}
             </Button>
             <Button
               variant={mode === 'particles' ? 'default' : 'outline'}
               onClick={() => onModeChange('particles')}
+              className="relative overflow-hidden transition-all hover:shadow-lg"
             >
-              <Loader2 className="mr-2 h-4 w-4" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Particles
+              {mode === 'particles' && (
+                <div className="absolute inset-0 bg-primary/10 animate-pulse" />
+              )}
             </Button>
           </div>
         </div>
@@ -66,15 +74,17 @@ export function ControlPanel({
         )}
 
         <div className="rounded-lg bg-muted p-4">
-          <h4 className="font-medium mb-2">Gesture Guide</h4>
-          <ul className="space-y-2 text-sm">
-            <li className="flex items-center gap-2">
-              <Hand className="h-4 w-4" />
-              Open hand to rotate
+          <h4 className="font-medium mb-3 text-gradient bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
+            Gesture Guide
+          </h4>
+          <ul className="space-y-3">
+            <li className="flex items-center gap-3 p-2 rounded-md hover:bg-background/50 transition-colors">
+              <Hand className="h-5 w-5 text-primary" />
+              <span>Open hand to rotate object in 3D space</span>
             </li>
-            <li className="flex items-center gap-2">
-              <Hand className="h-4 w-4" />
-              Pinch to scale
+            <li className="flex items-center gap-3 p-2 rounded-md hover:bg-background/50 transition-colors">
+              <Hand className="h-5 w-5 text-primary rotate-90" />
+              <span>Pinch gesture to scale object size</span>
             </li>
           </ul>
         </div>
